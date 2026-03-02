@@ -373,8 +373,6 @@ document.getElementById('import-excel-btn').addEventListener('click', () => {
 
 document.getElementById('excel-upload').addEventListener('change', function(e) {
     const file = e.target.files[0];
-    if (!file) return; 
-    
     const reader = new FileReader();
 
     reader.onload = function(e) {
@@ -386,14 +384,19 @@ document.getElementById('excel-upload').addEventListener('change', function(e) {
         let newInventory = {}; 
 
         rows.forEach(row => {
+            // Megkeressük az albumot és kártyát
             const album = window.gameData.find(a => (a.names['en'] || a.names['hu']) === row.Album);
             if (!album) return;
 
             const card = album.cards.find(c => c.name === row.Card);
             if (!card) return;
 
+            // Végigmegyünk az 1-18 oszlopokon
             for (let p = 1; p <= 18; p++) {
                 const val = row[`Piece ${p}`];
+                
+                // Csak akkor mentjük, ha szám és nagyobb mint 0
+                // A 'FORBIDDEN' és 'N/A' szövegeket automatikusan kihagyja
                 const qty = parseInt(val);
                 if (!isNaN(qty) && qty > 0) {
                     newInventory[`${card.id}_piece_${p}`] = qty;
@@ -401,6 +404,18 @@ document.getElementById('excel-upload').addEventListener('change', function(e) {
             }
         });
 
+        if (confirm("Biztosan felülírod az adataidat ezzel a táblázattal?")) {
+            const { doc, setDoc } = window.fbSDK;
+            setDoc(doc(window.db, "jatekosok", window.currentUserUid), {
+                inventory: newInventory
+            }, { merge: true }).then(() => {
+                alert("Sikeres importálás!");
+                location.reload();
+            });
+        }
+    };
+    reader.readAsArrayBuffer(file);
+});
         // 8 NYELVŰ FIGYELMEZTETÉS ÉS SIKER ÜZENET
         const lang = window.currLang || 'en';
         const messages = {
@@ -1353,6 +1368,7 @@ document.getElementById("save-profile-btn").addEventListener("click", async () =
 </body>
 
 </html>
+
 
 
 

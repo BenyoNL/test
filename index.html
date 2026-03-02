@@ -290,7 +290,7 @@ darabszamok: [9, 12, 12, 12, 15, 15, 15, 18, 18]
               darabszamok: [12, 12, 12, 15, 15, 15, 18, 18, 18] 
             },
             { id: "album_3", kepFajlNev: "Tundra_Alliance.jpg", en: "Tundra Alliance", de: "Tundra-Allianz", hu: "Tundra Szövetség", fr: "Alliance de la Toundra", tr: "Tundra İttifakı", ru: "Альянс Тундры", ar: "تحالف التندرا",
-              kartyaNevek: ["Alliance-Building", "One Heart", "Heroes' Aid", "Alliance Resources", "Twisted Obsession", "Virtues and Crimes", "Children of the New World", "Horn of Command", "Battlefield Epic"],
+              kartyaNevek: ["Alliance-Building", "One Heart", "Heroes' Aid", "Alliance Resources", "Twisted Obsession", "Virtues and Crimes", "Children of the \"New World\"", "Horn of Command", "Battlefield Epic"],
 darabszamok: [12, 12, 15, 15, 15, 18, 18, 18, 18] 
             },
             { id: "album_4", kepFajlNev: "Battlefield_Epic.jpg", en: "Battlefield Epic", de: "Schlachtfeld-Epos", hu: "Csatatéri Eposz", fr: "Épopée du champ de bataille", tr: "Savaş Alanı Destanı", ru: "Эпос поля боя", ar: "ملحمة ساحة المعركة",
@@ -590,9 +590,19 @@ async function checkUserProfile(uid) {
             } else { showScreen(profileScreen); }
         }
 
+window.isRegistering = false; // Alapértelmezett állapot
+
         onAuthStateChanged(auth, async (user) => {
-            if (user) { window.currentUserUid = user.uid; checkUserProfile(user.uid); } 
-            else { window.currentUserUid = null; showScreen(authScreen); }
+            // HA ÉPP REGISZTRÁLUNK, a háttérfigyelő ne szóljon bele a folyamatba!
+            if (window.isRegistering) return; 
+            
+            if (user) { 
+                window.currentUserUid = user.uid; 
+                checkUserProfile(user.uid); 
+            } else { 
+                window.currentUserUid = null; 
+                showScreen(authScreen); 
+            }
         });
 
         function hideAllViews() { 
@@ -1129,10 +1139,49 @@ function updateQty(pieceId, change) {
             player.src = ""; // Kiürítjük, hogy ne töltsön feleslegesen
             modal.classList.remove('show');
         });
+
+		// --- PROFIL MENTÉSE ÉS TOVÁBBLÉPÉS JAVÍTÁS ---
+		
+document.getElementById("save-profile-btn").addEventListener("click", async () => {
+  const jatekNev = document.getElementById("player-name").value.trim();
+  const szerver = document.getElementById("server-number").value.trim();
+  const szovetseg = document.getElementById("alliance-name").value.trim().toUpperCase();
+
+  if (!jatekNev || !szerver || szovetseg.length !== 3) {
+    document.getElementById("profile-error").innerText =
+      "Please fill all fields correctly (Alliance = 3 chars)";
+    return;
+  }
+
+  try {
+    await setDoc(doc(db, "jatekosok", currentUserUid), {
+      jatekNev,
+      szerver,
+      szovetseg
+    }, { merge: true });
+
+    document.getElementById("profile-setup-screen").style.display = "none";
+    document.getElementById("main-app-screen").style.display = "block";
+
+    document.getElementById("display-name").innerText = jatekNev;
+    document.getElementById("display-server").innerText = szerver;
+    document.getElementById("display-alliance").innerText = szovetseg;
+
+  } catch (err) {
+    document.getElementById("profile-error").innerText = err.message;
+  }
+});
     </script>
 </body>
 
 </html>
+
+
+
+
+
+
+
 
 
 

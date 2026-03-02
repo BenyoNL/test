@@ -369,13 +369,14 @@ darabszamok: [12, 15, 15, 15, 15, 18, 18, 18, 18] ,
 			 tiltottDarabok: [[], [15], [15], [14, 15], [13, 14, 15], [14, 15, 16, 17, 18], [14, 15, 16, 17, 18], [12, 13, 14, 15, 16, 17, 18], [13, 14, 15, 16, 17, 18]]
             }
         ];
+// --- EXCEL FELTÖLTÉS ÉS MENTÉS LOGIKA ---
 document.getElementById('import-excel-btn').addEventListener('click', () => {
     document.getElementById('excel-upload').click();
 });
 
 document.getElementById('excel-upload').addEventListener('change', function(e) {
     const file = e.target.files[0];
-    if (!file) return; // Ha mégsem választott ki fájlt, kilép
+    if (!file) return; 
     
     const reader = new FileReader();
 
@@ -403,61 +404,73 @@ document.getElementById('excel-upload').addEventListener('change', function(e) {
             }
         });
 
-        // --- TÖBBNYELVŰ FIGYELMEZTETÉS ÉS SIKER ÜZENET ---
-		const excelTranslations = {
-    en: { title: "Excel Import / Export", desc: "Download the template, fill it out, and upload it!", download: "📄 Download Template", upload: "📥 Upload Excel (Import)" },
-    hu: { title: "Excel Import / Export", desc: "Töltsd le a sablont, töltsd ki, majd töltsd vissza!", download: "📄 Sablon letöltése", upload: "📥 Excel feltöltése (Import)" },
-    de: { title: "Excel Import / Export", desc: "Laden Sie die Vorlage herunter, füllen Sie sie aus und laden Sie sie hoch!", download: "📄 Vorlage herunterladen", upload: "📥 Excel hochladen (Import)" },
-    fr: { title: "Import / Export Excel", desc: "Téléchargez le modèle, remplissez-le et téléchargez-le !", download: "📄 Télécharger le modèle", upload: "📥 Importer Excel" }
-};
-
-// Ezt a részt tedd oda, ahol a nyelvváltás megtörténik:
-const exT = excelTranslations[window.currLang] || excelTranslations['en'];
-if(document.getElementById('txt-excel-title')) document.getElementById('txt-excel-title').innerText = exT.title;
-if(document.getElementById('txt-excel-desc')) document.getElementById('txt-excel-desc').innerText = exT.desc;
-if(document.getElementById('txt-excel-download')) document.getElementById('txt-excel-download').innerText = exT.download;
-if(document.getElementById('import-excel-btn')) document.getElementById('import-excel-btn').innerText = exT.upload;
+        // 8 NYELVŰ FIGYELMEZTETÉS ÉS SIKER ÜZENET
         const lang = window.currLang || 'en';
         const messages = {
-            en: { 
-                warn: "Are you sure you want to OVERWRITE your current puzzle pieces with this Excel file?", 
-                success: "Success! Your inventory has been updated." 
-            },
-            hu: { 
-                warn: "Biztosan FELÜLÍROD a jelenlegi kártyáidat az Excel tartalmával?", 
-                success: "Sikeres importálás! Az adataid frissültek." 
-            },
-            de: { 
-                warn: "Möchten Sie Ihre aktuellen Puzzleteile wirklich mit dieser Excel-Datei ÜBERSCHREIBEN?", 
-                success: "Erfolg! Ihr Inventar wurde aktualisiert." 
-            },
-            fr: {
-                warn: "Êtes-vous sûr de vouloir ÉCRASER vos pièces de puzzle actuelles avec ce fichier Excel ?",
-                success: "Succès ! Votre inventaire a été mis à jour."
-            }
+            en: { warn: "Are you sure you want to OVERWRITE your current puzzle pieces with this Excel file?", success: "Success! Your inventory has been updated." },
+            hu: { warn: "Biztosan FELÜLÍROD a jelenlegi kártyáidat az Excel tartalmával?", success: "Sikeres importálás! Az adataid frissültek." },
+            de: { warn: "Möchten Sie Ihre aktuellen Puzzleteile wirklich mit dieser Excel-Datei ÜBERSCHREIBEN?", success: "Erfolg! Ihr Inventar wurde aktualisiert." },
+            fr: { warn: "Êtes-vous sûr de vouloir ÉCRASER vos pièces actuelles avec ce fichier Excel ?", success: "Succès ! Votre inventaire a été mis à jour." },
+            tr: { warn: "Mevcut yapboz parçalarınızı bu Excel dosyasıyla ÜZERİNE YAZMAK istediğinizden emin misiniz?", success: "Başarılı! Envanteriniz güncellendi." },
+            ru: { warn: "Вы уверены, что хотите ПЕРЕЗАПИСАТЬ свои текущие пазлы этим файлом Excel?", success: "Успех! Ваш инвентарь обновлен." },
+            ar: { warn: "هل أنت متأكد أنك تريد استبدال قطع اللغز الحالية بملف الإكسل هذا؟", success: "نجاح! تم تحديث المخزون الخاص بك." },
+            es: { warn: "¿Estás seguro de que quieres SOBRESCRIBIR tus piezas actuales con este archivo Excel?", success: "¡Éxito! Tu inventario ha sido actualizado." }
         };
 
         const currentMsgs = messages[lang] || messages['en'];
 
-        // FELDODJA A FIGYELMEZTETŐ ABLAKOT A MEGFELELŐ NYELVEN
         if (confirm(currentMsgs.warn)) {
-            const { doc, setDoc } = window.fbSDK;
-            setDoc(doc(window.db, "jatekosok", window.currentUserUid), {
+            // JAVÍTVA: A felesleges window.fbSDK eltávolítva, közvetlenül a db-t használjuk!
+            setDoc(doc(db, "jatekosok", window.currentUserUid), {
                 inventory: newInventory
             }, { merge: true }).then(() => {
-                alert(currentMsgs.success); // Sikeres mentés üzenet
+                alert(currentMsgs.success);
                 location.reload();
             }).catch(err => {
                 console.error(err);
-                alert("Error saving data.");
+                alert("Error saving data: " + err.message);
             });
         }
         
-        // Fájl input kiürítése, hogy újra lehessen ugyanazt tölteni, ha kell
         document.getElementById('excel-upload').value = "";
     };
     reader.readAsArrayBuffer(file);
-});        window.gameData = albumAdatok.map((album) => {
+});
+
+
+// --- EXCEL GOMBOK TÖBBNYELVŰSÍTÉSE (8 Nyelv) ---
+const excelTranslations = {
+    en: { title: "Excel Import / Export", desc: "Download the template, fill it out, and upload it!", download: "📄 Download Template", upload: "📥 Upload Excel (Import)" },
+    hu: { title: "Excel Import / Export", desc: "Töltsd le a sablont, töltsd ki, majd töltsd vissza!", download: "📄 Sablon letöltése", upload: "📥 Excel feltöltése (Import)" },
+    de: { title: "Excel Import / Export", desc: "Laden Sie die Vorlage herunter, füllen Sie sie aus und laden Sie sie hoch!", download: "📄 Vorlage herunterladen", upload: "📥 Excel hochladen (Import)" },
+    fr: { title: "Import / Export Excel", desc: "Téléchargez le modèle, remplissez-le et téléchargez-le !", download: "📄 Télécharger le modèle", upload: "📥 Importer Excel" },
+    tr: { title: "Excel İçe / Dışa Aktar", desc: "Şablonu indirin, doldurun ve geri yükleyin!", download: "📄 Şablonu İndir", upload: "📥 Excel Yükle (İçe Aktar)" },
+    ru: { title: "Импорт / Экспорт Excel", desc: "Скачайте шаблон, заполните его и загрузите!", download: "📄 Скачать шаблон", upload: "📥 Загрузить Excel (Импорт)" },
+    ar: { title: "استيراد / تصدير إكسل", desc: "قم بتنزيل النموذج، واملأه، ثم ارفعه!", download: "📄 تنزيل النموذج", upload: "📥 رفع إكسل (استيراد)" },
+    es: { title: "Importar / Exportar Excel", desc: "¡Descarga la plantilla, complétala y súbela!", download: "📄 Descargar Plantilla", upload: "📥 Subir Excel (Importar)" }
+};
+
+// Létrehozunk egy függvényt, ami beállítja a szövegeket
+window.updateExcelUI = function() {
+    const lang = window.currLang || 'en';
+    const exT = excelTranslations[lang] || excelTranslations['en'];
+    if(document.getElementById('txt-excel-title')) document.getElementById('txt-excel-title').innerText = exT.title;
+    if(document.getElementById('txt-excel-desc')) document.getElementById('txt-excel-desc').innerText = exT.desc;
+    if(document.getElementById('txt-excel-download')) document.getElementById('txt-excel-download').innerText = exT.download;
+    if(document.getElementById('import-excel-btn')) document.getElementById('import-excel-btn').innerText = exT.upload;
+};
+
+// Automatikusan lefuttatjuk induláskor
+window.updateExcelUI();
+
+// Hogy nyelvváltoztatáskor is frissüljön, ráakasztjuk az oldal összes kattintására,
+// így ha a felhasználó rákattint egy zászlóra vagy a nyelvválasztóra, a gombok is frissülnek!
+document.addEventListener('click', () => {
+    setTimeout(window.updateExcelUI, 100); 
+});
+		
+		
+	window.gameData = albumAdatok.map((album) => {
             const baseAlbumName = album.kepFajlNev.replace('.jpg', ''); 
             return {
                 id: album.id,
@@ -1343,6 +1356,7 @@ document.getElementById("save-profile-btn").addEventListener("click", async () =
 </body>
 
 </html>
+
 
 
 

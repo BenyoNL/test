@@ -384,45 +384,38 @@ document.getElementById('excel-upload').addEventListener('change', function(e) {
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(firstSheet);
 
-        let newInventory = { ...window.userInventory };
+        let newInventory = {}; 
 
         rows.forEach(row => {
-            // Megkeressük az albumot és a kártyát név alapján
-            const album = window.gameData.find(a => a.names['en'] === row.Album);
+            // Megkeressük az albumot és kártyát
+            const album = window.gameData.find(a => (a.names['en'] || a.names['hu']) === row.Album);
             if (!album) return;
 
-            const cardIdx = album.cards.findIndex(c => c.name === row.Card);
-            if (cardIdx === -1) return;
+            const card = album.cards.find(c => c.name === row.Card);
+            if (!card) return;
 
-            const cardId = album.cards[cardIdx].id;
-            const qty = parseInt(row.Qty) || 1;
-
-            // Számok feldolgozása (pl: "1, 2, 5-8")
-            const piecesStr = String(row.Pieces);
-            const parts = piecesStr.split(',');
-
-            parts.forEach(part => {
-                if (part.includes('-')) {
-                    const [start, end] = part.split('-').map(n => parseInt(n.trim()));
-                    for (let i = start; i <= end; i++) {
-                        newInventory[`${cardId}_piece_${i}`] = qty;
-                    }
-                } else {
-                    const num = parseInt(part.trim());
-                    if (num) newInventory[`${cardId}_piece_${num}`] = qty;
+            // Végigmegyünk az 1-18 oszlopokon
+            for (let p = 1; p <= 18; p++) {
+                const val = row[`Piece ${p}`];
+                
+                // Csak akkor mentjük, ha szám és nagyobb mint 0
+                // A 'FORBIDDEN' és 'N/A' szövegeket automatikusan kihagyja
+                const qty = parseInt(val);
+                if (!isNaN(qty) && qty > 0) {
+                    newInventory[`${card.id}_piece_${p}`] = qty;
                 }
-            });
+            }
         });
 
-        // Mentés Firebase-be
-        window.userInventory = newInventory;
-        const { doc, setDoc } = window.fbSDK; // Feltételezve, hogy így eléred
-        setDoc(doc(window.db, "jatekosok", window.currentUserUid), {
-            inventory: newInventory
-        }, { merge: true }).then(() => {
-            alert("Success! Puzzle pieces imported.");
-            location.reload(); // Frissítünk, hogy látszódjon az eredmény
-        });
+        if (confirm("Biztosan felülírod az adataidat ezzel a táblázattal?")) {
+            const { doc, setDoc } = window.fbSDK;
+            setDoc(doc(window.db, "jatekosok", window.currentUserUid), {
+                inventory: newInventory
+            }, { merge: true }).then(() => {
+                alert("Sikeres importálás!");
+                location.reload();
+            });
+        }
     };
     reader.readAsArrayBuffer(file);
 });
@@ -1312,6 +1305,7 @@ document.getElementById("save-profile-btn").addEventListener("click", async () =
 </body>
 
 </html>
+
 
 
 

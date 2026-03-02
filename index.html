@@ -149,6 +149,15 @@
 
     <div id="toast-msg">✅ Saved!</div>
 
+	<div style="margin: 20px 0; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+    <h4>Excel Import / Export</h4>
+    <p style="font-size: 0.9em; color: #aaa;">Töltsd le a sablont, töltsd ki, majd töltsd vissza!</p>
+    <a href="Tundra_Trade_Sablon.xlsx" download class="btn" style="background: #34495e; display: inline-block; margin-bottom: 10px;">📄 Sablon letöltése</a>
+    <br>
+    <button id="import-excel-btn" class="btn btn-green">📥 Excel feltöltése (Import)</button>
+    <input type="file" id="excel-upload" style="display:none" accept=".xlsx, .xls">
+</div>
+
 <div id="auth-screen" class="container">
     <div style="margin-bottom: 30px;">
         <h1 style="color: #e09f3e; font-size: 32px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px;">Whiteout Survival</h1>
@@ -361,7 +370,62 @@ darabszamok: [12, 15, 15, 15, 15, 18, 18, 18, 18] ,
 			 tiltottDarabok: [[], [15], [15], [14, 15], [13, 14, 15], [14, 15, 16, 17, 18], [14, 15, 16, 17, 18], [12, 13, 14, 15, 16, 17, 18], [13, 14, 15, 16, 17, 18]]
             }
         ];
+document.getElementById('import-excel-btn').addEventListener('click', () => {
+    document.getElementById('excel-upload').click();
+});
 
+document.getElementById('excel-upload').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type: 'array'});
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(firstSheet);
+
+        let newInventory = { ...window.userInventory };
+
+        rows.forEach(row => {
+            // Megkeressük az albumot és a kártyát név alapján
+            const album = window.gameData.find(a => a.names['en'] === row.Album);
+            if (!album) return;
+
+            const cardIdx = album.cards.findIndex(c => c.name === row.Card);
+            if (cardIdx === -1) return;
+
+            const cardId = album.cards[cardIdx].id;
+            const qty = parseInt(row.Qty) || 1;
+
+            // Számok feldolgozása (pl: "1, 2, 5-8")
+            const piecesStr = String(row.Pieces);
+            const parts = piecesStr.split(',');
+
+            parts.forEach(part => {
+                if (part.includes('-')) {
+                    const [start, end] = part.split('-').map(n => parseInt(n.trim()));
+                    for (let i = start; i <= end; i++) {
+                        newInventory[`${cardId}_piece_${i}`] = qty;
+                    }
+                } else {
+                    const num = parseInt(part.trim());
+                    if (num) newInventory[`${cardId}_piece_${num}`] = qty;
+                }
+            });
+        });
+
+        // Mentés Firebase-be
+        window.userInventory = newInventory;
+        const { doc, setDoc } = window.fbSDK; // Feltételezve, hogy így eléred
+        setDoc(doc(window.db, "jatekosok", window.currentUserUid), {
+            inventory: newInventory
+        }, { merge: true }).then(() => {
+            alert("Success! Puzzle pieces imported.");
+            location.reload(); // Frissítünk, hogy látszódjon az eredmény
+        });
+    };
+    reader.readAsArrayBuffer(file);
+});
         window.gameData = albumAdatok.map((album) => {
             const baseAlbumName = album.kepFajlNev.replace('.jpg', ''); 
             return {
@@ -1248,6 +1312,7 @@ document.getElementById("save-profile-btn").addEventListener("click", async () =
 </body>
 
 </html>
+
 
 
 

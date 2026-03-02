@@ -211,14 +211,17 @@
         </div>
 
         <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-            <h2 style="margin: 0; font-size: 1.5em; color: #e09f3e;"><span id="display-name">Játékos</span> <span id="display-percent" style="color: #2ecc71; margin-left: 10px;">0%</span></h2>
+            <h2 style="margin: 0; font-size: 1.5em; color: #e09f3e;"><span id="display-name">Játékos</span> <span id="display-percent" style="color: #2ecc71; margin-left: 10px;">0</span></h2>
             <p style="margin: 5px 0 0 0; color: #ccc;"><span class="t-state">State</span>: <span id="display-server" style="color:#fff; font-weight:bold;">0</span> | <span class="t-alliance">Alliance</span>: <span id="display-alliance" style="color:#fff; font-weight:bold;">---</span></p>
         </div>
 
-        <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;">
-            <a href="Tundra_Trade_Pro_Template.xlsx" download target="_blank" class="btn" style="background: #34495e; padding: 8px 15px; font-size: 0.9em; flex: 1; text-decoration: none; box-sizing: border-box;" id="txt-excel-download">📄 Sablon</a>
-            <button id="import-excel-btn" class="btn btn-green" style="padding: 8px 15px; font-size: 0.9em; flex: 1; margin: 0; box-sizing: border-box;">📥 Upload</button>
-            <button id="btn-download" class="btn" style="background: #f39c12; padding: 8px 15px; font-size: 0.9em; flex: 1; margin: 0; box-sizing: border-box;" id="txt-excel-export">📤 Download</button>
+        <div style="display: flex; justify-content: space-between; align-items: stretch; gap: 10px; margin-bottom: 20px;">
+            <a href="Tundra_Trade_Pro_Template.xlsx" download target="_blank" class="btn" style="background: #34495e; padding: 10px; font-size: 0.9em; flex: 1; text-align: center; text-decoration: none; margin: 0; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 1px solid transparent;" id="txt-excel-download">📄 Sablon</a>
+            
+            <button id="import-excel-btn" class="btn btn-green" style="padding: 10px; font-size: 0.9em; flex: 1; margin: 0; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 1px solid transparent;" id="txt-excel-upload">💻➡️☁️ Upload</button>
+            
+            <button id="btn-download" class="btn" style="background: #f39c12; padding: 10px; font-size: 0.9em; flex: 1; margin: 0; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 1px solid transparent;" id="txt-excel-export">☁️➡️💻 Download</button>
+            
             <input type="file" id="excel-upload" style="display:none" accept=".xlsx, .xls">
         </div>
 	
@@ -371,35 +374,43 @@ document.getElementById('import-excel-btn').addEventListener('click', () => {
     document.getElementById('excel-upload').click();
 });
 
-document.getElementById('excel-upload').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return; 
-    
-    const reader = new FileReader();
+// --- ADATBÁZIS LETÖLTÉSE (EXPORT) ---
+document.getElementById('btn-download').addEventListener('click', () => {
+    if (!window.gameData || !window.userInventory) return;
 
-    reader.onload = function(e) {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, {type: 'array'});
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(firstSheet);
+    let exportRows = [];
 
-        let newInventory = {}; 
-
-        rows.forEach(row => {
-            const album = window.gameData.find(a => (a.names['en'] || a.names['hu']) === row.Album);
-            if (!album) return;
-
-            const card = album.cards.find(c => c.name === row.Card);
-            if (!card) return;
+    window.gameData.forEach(album => {
+        album.cards.forEach(card => {
+            let row = {
+                "Album": album.names['en'] || "",
+                "Card": card.name
+            };
 
             for (let p = 1; p <= 18; p++) {
-                const val = row[`Piece ${p}`];
-                const qty = parseInt(val);
-                if (!isNaN(qty) && qty > 0) {
-                    newInventory[`${card.id}_piece_${p}`] = qty;
+                const pieceId = `${card.id}_piece_${p}`;
+                const colName = `Piece ${p}`;
+                
+                if (p > card.pieceCount) {
+                    row[colName] = "N/A"; 
+                } else if (card.forbiddenPieces && card.forbiddenPieces.includes(p)) {
+                    row[colName] = "FORBIDDEN"; 
+                } else {
+                    row[colName] = window.userInventory[pieceId] || 0;
                 }
             }
+            exportRows.push(row);
         });
+    });
+
+    // Excel fájl legenerálása és letöltése
+    const worksheet = XLSX.utils.json_to_sheet(exportRows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "My Puzzle Pieces");
+    
+    const pName = document.getElementById('display-name').innerText || "Player";
+    XLSX.writeFile(workbook, `TundraTrade_${pName}_Data.xlsx`);
+});
 
         // 8 NYELVŰ FIGYELMEZTETÉS ÉS SIKER ÜZENET
         const lang = window.currLang || 'en';
@@ -436,7 +447,7 @@ document.getElementById('excel-upload').addEventListener('change', function(e) {
 
 
 // --- EXCEL GOMBOK TÖBBNYELVŰSÍTÉSE (8 Nyelv) ---
-const const excelTranslations = {
+const excelTranslations = {
     en: { download: "📄 Template", upload: "💻➡️☁️ Upload", export: "☁️➡️💻 Download" },
     hu: { download: "📄 Sablon", upload: "💻➡️☁️ Feltöltés", export: "☁️➡️💻 Letöltés" },
     de: { download: "📄 Vorlage", upload: "💻➡️☁️ Hochladen", export: "☁️➡️💻 Herunterladen" },
@@ -447,15 +458,14 @@ const const excelTranslations = {
     es: { download: "📄 Plantilla", upload: "💻➡️☁️ Subir", export: "☁️➡️💻 Descargar" }
 };
 
-// Létrehozunk egy függvényt, ami beállítja a szövegeket
 window.updateExcelUI = function() {
     const lang = window.currLang || 'en';
     const exT = excelTranslations[lang] || excelTranslations['en'];
-    if(document.getElementById('txt-excel-title')) document.getElementById('txt-excel-title').innerText = exT.title;
-    if(document.getElementById('txt-excel-desc')) document.getElementById('txt-excel-desc').innerText = exT.desc;
     if(document.getElementById('txt-excel-download')) document.getElementById('txt-excel-download').innerText = exT.download;
     if(document.getElementById('import-excel-btn')) document.getElementById('import-excel-btn').innerText = exT.upload;
+    if(document.getElementById('txt-excel-export')) document.getElementById('txt-excel-export').innerText = exT.export;
 };
+
 
 // Automatikusan lefuttatjuk induláskor
 window.updateExcelUI();
@@ -751,11 +761,11 @@ async function checkUserProfile(uid) {
                 window.gameData.forEach(a => a.cards.forEach(c => totalPieces += c.pieceCount));
                 let myPieces = 0;
                 for (const key in window.userInventory) { if (window.userInventory[key] > 0) myPieces++; }
-                
+                let myPct = totalPieces > 0 ? Math.round((myPieces / totalPieces) * 100) : 0;
                 
                 // Név és százalék kiírása a fejlécbe
                 const myName = data.jatekNev || data.nev;
-                document.getElementById('display-name').innerHTML = `${myName} <span style="color:#28a745; font-size:16px; margin-left:10px; text-shadow:1px 1px 2px black;"></span>`;
+                document.getElementById('display-name').innerHTML = `${myName} <span style="color:#28a745; font-size:16px; margin-left:10px; text-shadow:1px 1px 2px black;">${myPct}%</span>`;
                 
                 document.getElementById('display-server').textContent = data.szerver;
                 document.getElementById('display-alliance').textContent = data.szovetseg;
@@ -1353,6 +1363,14 @@ document.getElementById("save-profile-btn").addEventListener("click", async () =
 </body>
 
 </html>
+
+
+
+
+
+
+
+
 
 
 

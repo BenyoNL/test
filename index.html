@@ -418,7 +418,6 @@ document.getElementById('lang-selector').addEventListener('change', (e) => {
         document.getElementById('btn-match-global').addEventListener('click', () => runMatchmaker('global'));
         document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
-        document.getElementById('search-input').addEventListener('input', (e) => {
             // Segédfüggvény a keresőből történő azonnali módosításhoz
         window.searchUpdateQty = function(pieceId, change, elementId) {
             let currentQty = window.userInventory[pieceId] || 0;
@@ -1246,6 +1245,7 @@ document.getElementById("save-profile-btn").addEventListener("click", async () =
 </body>
 
 </html>
+
 
 
 

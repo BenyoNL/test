@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Whiteout Survival - Tundra Trade</title>
+	<script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; margin: 0; padding: 20px; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); color: #eef2f5; min-height: 100vh; }
         .container { background: rgba(25, 35, 50, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); max-width: 800px; margin: auto; padding: 30px; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
@@ -200,6 +201,8 @@
                 <h3 style="margin: 0; color:#e09f3e;" id="display-name"></h3>
                 <small style="color: #ccc; display: block; margin-bottom: 8px;"><span class="t-state">State</span>: <b id="display-server" style="color:#fff;"></b> | <span class="t-alliance">Alliance</span>: <b id="display-alliance" style="color:#fff;"></b></small>
                 <button id="logout-btn" class="btn btn-back t-btn-logout" style="margin: 0; padding: 4px 10px; font-size: 12px;">Logout</button>
+				<button id="import-excel-btn" style="background: #27ae60; margin-top: 10px;">📥 Import from Excel</button>
+<input type="file" id="excel-upload" style="display:none" accept=".xlsx, .xls, .csv">
             </div>
             <div>
                 <select id="lang-selector">
@@ -1245,6 +1248,7 @@ document.getElementById("save-profile-btn").addEventListener("click", async () =
 </body>
 
 </html>
+
 
 
 

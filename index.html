@@ -572,25 +572,7 @@ document.getElementById('lang-selector').addEventListener('change', (e) => {
         document.getElementById('btn-match-global').addEventListener('click', () => runMatchmaker('global'));
         document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 		
-document.getElementById('btn-download').addEventListener('click', () => {
-    if (!window.userInventory) return;
-    let data = [["Album", "Kártya Neve", "Darab"]];
-    window.gameData.forEach(album => {
-        const aName = album.names[window.currLang] || album.names['en'];
-        album.cards.forEach(card => {
-            for(let p = 1; p <= card.pieceCount; p++) {
-                const qty = window.userInventory[`${card.id}_piece_${p}`] || 0;
-                if(qty > 0) {
-                    data.push([aName, `${card.name} / ${p}.`, qty]);
-                }
-            }
-        });
-    });
-    const worksheet = XLSX.utils.aoa_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Inventory");
-    XLSX.utils.writeFile(workbook, "Tundra_Album_Trade_MyCards.xlsx");
-});
+
             // Segédfüggvény a keresőből történő azonnali módosításhoz
         window.searchUpdateQty = function(pieceId, change, elementId) {
             let currentQty = window.userInventory[pieceId] || 0;
@@ -1418,6 +1400,7 @@ document.getElementById("save-profile-btn").addEventListener("click", async () =
 </body>
 
 </html>
+
 
 
 

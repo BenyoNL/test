@@ -438,39 +438,47 @@ document.getElementById('excel-upload').addEventListener('change', function(e) {
     reader.readAsArrayBuffer(file);
 });
 
-		window.exportMyCards = function() {
+window.exportMyCards = function() {
     if (!window.userInventory) {
         alert("Hiba: Nincsenek kártyák betöltve!");
         return;
     }
     
-    // 1. Létrehozzuk az Excel fejléceit
-    let data = [["Album", "Kártya Neve", "Darabszám"]];
+    // 1. Fejléc létrehozása pontosan a sablon formátuma szerint
+    let headerRow = ["Album", "Card"];
+    for (let i = 1; i <= 18; i++) {
+        headerRow.push(`Piece ${i}`);
+    }
+    let data = [headerRow];
     
-    // 2. Kigyűjtjük azokat a kártyákat, amikből legalább 1 db van
+    // 2. Kártyák és darabszámok kigyűjtése mátrix formában
     window.gameData.forEach(album => {
+        // Az import az angol vagy magyar nevet is felismeri, használjuk az aktuálisat
         const aName = album.names[window.currLang] || album.names['en'];
+        
         album.cards.forEach(card => {
-            for(let p = 1; p <= card.pieceCount; p++) {
-                const qty = window.userInventory[`${card.id}_piece_${p}`] || 0;
-                if(qty > 0) {
-                    data.push([aName, `${card.name} / ${p}.`, qty]);
+            let row = [aName, card.name]; // Sor kezdése az albummal és kártyanévvel
+            
+            // 18 oszlop feltöltése
+            for(let p = 1; p <= 18; p++) {
+                if (p <= card.pieceCount) {
+                    // Ha létezik a darab az adott kártyához, beírjuk a mennyiséget (ha 0, akkor 0-t)
+                    const qty = window.userInventory[`${card.id}_piece_${p}`] || 0;
+                    row.push(qty);
+                } else {
+                    // Ha a kártya pl. csak 9 darabos, a 10-18. oszlopokat üresen hagyjuk
+                    row.push(""); 
                 }
             }
+            data.push(row);
         });
     });
 
-    // 3. Ha teljesen üres a leltár, szólunk
-    if (data.length === 1) {
-        alert("Nincs még meg egyetlen kártyád sem, amit exportálni lehetne!");
-        return;
-    }
-
-    // 4. Excel fájl generálása és letöltése
+    // 3. Excel fájl generálása és letöltése
     const worksheet = XLSX.utils.aoa_to_sheet(data);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Saját Kártyák");
-    XLSX.writeFile(workbook, "Tundra_Trade_Sajat_Kartyak.xlsx");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Tundra Trade");
+    XLSX.writeFile(workbook, "Tundra_Trade_Export.xlsx");
 };
 
 // --- EXCEL GOMBOK TÖBBNYELVŰSÍTÉSE (8 Nyelv) ---
@@ -1410,6 +1418,7 @@ document.getElementById("save-profile-btn").addEventListener("click", async () =
 </body>
 
 </html>
+
 
 
 

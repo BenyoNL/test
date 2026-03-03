@@ -211,7 +211,7 @@
         </div>
 
 <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-            <h2 style="margin: 0; font-size: 1.5em; color: #e09f3e;"><span id="display-name">Játékos</span> <span id="display-percent" style="color: #2ecc71; margin-left: 10px;">0</span></h2>
+           <h2 style="margin: 0; font-size: 1.5em; color: #e09f3e;"><span id="display-name">Játékos</span></h2>
             <p style="margin: 5px 0 0 0; color: #ccc;"><span class="t-state">State</span>: <span id="display-server" style="color:#fff; font-weight:bold;">0</span> | <span class="t-alliance">Alliance</span>: <span id="display-alliance" style="color:#fff; font-weight:bold;">---</span></p>
         </div>
 
@@ -529,7 +529,26 @@ document.getElementById('lang-selector').addEventListener('change', (e) => {
         document.getElementById('btn-match-state').addEventListener('click', () => runMatchmaker('state'));
         document.getElementById('btn-match-global').addEventListener('click', () => runMatchmaker('global'));
         document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
-
+		
+document.getElementById('btn-download').addEventListener('click', () => {
+    if (!window.userInventory) return;
+    let data = [["Album", "Kártya Neve", "Darab"]];
+    window.gameData.forEach(album => {
+        const aName = album.names[window.currLang] || album.names['en'];
+        album.cards.forEach(card => {
+            for(let p = 1; p <= card.pieceCount; p++) {
+                const qty = window.userInventory[`${card.id}_piece_${p}`] || 0;
+                if(qty > 0) {
+                    data.push([aName, `${card.name} / ${p}.`, qty]);
+                }
+            }
+        });
+    });
+    const worksheet = XLSX.utils.aoa_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Inventory");
+    XLSX.utils.writeFile(workbook, "Tundra_Trade_MyCards.xlsx");
+});
             // Segédfüggvény a keresőből történő azonnali módosításhoz
         window.searchUpdateQty = function(pieceId, change, elementId) {
             let currentQty = window.userInventory[pieceId] || 0;
@@ -572,9 +591,9 @@ document.getElementById('lang-selector').addEventListener('change', (e) => {
                     if (card.name.toLowerCase().includes(queryText)) {
                         foundSomething = true;
                         
-                        const res = document.createElement('div');
-                        res.className = 'list-item search-item card-item';
-                        res.style.cursor = 'default'; // Ne a teljes doboz legyen kattintható, csak a gombok
+const res = document.createElement('div');
+res.className = 'match-card'; 
+res.style.cursor = 'default';
                         
                         // Kártya fejléc
                         let html = `
@@ -598,10 +617,10 @@ document.getElementById('lang-selector').addEventListener('change', (e) => {
                                 <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.5); padding:6px 10px; border-radius:8px;">
                                     <button class="btn btn-red" style="margin:0; width:45px; padding:2px 0; font-size:22px; box-shadow:none;" onclick="searchUpdateQty('${pieceId}', -1, 'sqty-${pieceId}')">➖</button>
                                     
-                                    <div style="flex-grow:1; text-align:center; font-size:15px; color:#fff;">
-                                        ${card.name} / ${p}. darab<br>
-                                        <span style="font-size:13px; color:#888;">(Megvan: <b id="sqty-${pieceId}" style="color:${color}; font-size:15px;">${currentQty}</b> db)</span>
-                                    </div>
+<div style="flex-grow:1; text-align:center; font-size:15px; color:#fff;">
+    ${card.name} / ${p}. ${window.currLang === 'hu' ? 'darab' : 'piece'}<br>
+    <span style="font-size:13px; color:#888;">(${window.currLang === 'hu' ? 'Megvan' : 'Owned'}: <b id="sqty-${pieceId}" style="color:${color}; font-size:15px;">${currentQty}</b> ${window.currLang === 'hu' ? 'db' : 'pcs'})</span>
+</div>
                                     
                                     <button class="btn btn-green" style="margin:0; width:45px; padding:2px 0; font-size:22px; box-shadow:none;" onclick="searchUpdateQty('${pieceId}', 1, 'sqty-${pieceId}')">➕</button>
                                 </div>
@@ -947,7 +966,7 @@ let statusHtml = '';
             viewCards.style.display = 'block';
         }
 
-        function renderPuzzle(album, card) {
+        window.renderPuzzle = function(album, card) {
             hideAllViews();
             window.currentAlbumGlobal = album; window.currentCardGlobal = card;
             const viewPuzzle = document.getElementById('view-puzzle');
@@ -1357,6 +1376,7 @@ document.getElementById("save-profile-btn").addEventListener("click", async () =
 </body>
 
 </html>
+
 
 
 

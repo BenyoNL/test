@@ -214,13 +214,27 @@
             <h2 style="margin: 0; font-size: 1.5em; color: #e09f3e;"><span id="display-name">Játékos</span> <span id="display-percent" style="color: #2ecc71; margin-left: 10px;">0%</span></h2>
             <p style="margin: 5px 0 0 0; color: #ccc;"><span class="t-state">State</span>: <span id="display-server" style="color:#fff; font-weight:bold;">0</span> | <span class="t-alliance">Alliance</span>: <span id="display-alliance" style="color:#fff; font-weight:bold;">---</span></p>
         </div>
+<div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;">
+    <a href="Tundra_Trade_Pro_Template.xlsx" download target="_blank"
+       class="btn btn-dark"
+       style="flex:1; text-decoration:none; box-sizing:border-box;"
+       id="txt-excel-download">📄 Sablon</a>
 
-        <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;">
-            <a href="Tundra_Trade_Pro_Template.xlsx" download target="_blank" class="btn" style="background: #34495e; padding: 8px 15px; font-size: 0.9em; flex: 1; text-decoration: none; box-sizing: border-box;" id="txt-excel-download">📄 Sablon</a>
-            <button id="import-excel-btn" class="btn btn-green" style="padding: 8px 15px; font-size: 0.9em; flex: 1; margin: 0; box-sizing: border-box;">📥 Upload</button>
-            <button id="btn-download" class="btn" style="background: #f39c12; padding: 8px 15px; font-size: 0.9em; flex: 1; margin: 0; box-sizing: border-box;" id="txt-excel-export">📤 Download</button>
-            <input type="file" id="excel-upload" style="display:none" accept=".xlsx, .xls">
-        </div>
+    <button id="import-excel-btn"
+        class="btn btn-dark"
+        style="flex:1; margin:0; box-sizing:border-box;">
+        📥 Upload
+    </button>
+
+    <button id="btn-download"
+        class="btn btn-dark"
+        style="flex:1; margin:0; box-sizing:border-box;"
+        id="txt-excel-export">
+        📤 Download
+    </button>
+
+    <input type="file" id="excel-upload" style="display:none" accept=".xlsx, .xls">
+</div>
 	
         <div class="action-buttons" style="display: flex; justify-content: space-between; gap: 5px;">
             <button id="btn-match-clan" class="btn btn-blue t-btn-clan" style="flex: 2; font-size: 13px; padding: 10px 5px; box-shadow: 0 4px 15px rgba(66, 133, 244, 0.4); position: relative;">🤝 Search in Alliance<span id="badge-clan" class="trade-badge">0</span></button>
@@ -566,7 +580,17 @@ document.getElementById('lang-selector').addEventListener('change', (e) => {
 
             hideAllViews();
             const viewSearch = document.getElementById('view-search-results');
-            viewSearch.innerHTML = `<h3 style="text-align:left;">🔍 "${queryText}"</h3>`;
+            const searchTitle = {
+    en: "Search results for",
+    hu: "Keresési találatok:",
+    de: "Suchergebnisse für",
+    fr: "Résultats de recherche pour",
+    tr: "Arama sonuçları:",
+    ru: "Результаты поиска:",
+    ar: "نتائج البحث عن"
+};
+
+viewSearch.innerHTML = `<h3 style="text-align:left;">🔍 ${searchTitle[window.currLang] || searchTitle.en} "${queryText}"</h3>`;
             let foundSomething = false;
 
             window.gameData.forEach(album => {
@@ -576,7 +600,11 @@ document.getElementById('lang-selector').addEventListener('change', (e) => {
                     const res = document.createElement('div');
                     res.className = 'list-item search-item';
                     res.innerHTML = `📖 ${aName} <span style="float:right; color:#e09f3e;">Ugrás az albumhoz ❯</span>`;
-                    res.onclick = () => renderCards(album);
+ res.onclick = () => {
+    hideAllViews();
+    document.getElementById('view-cards').style.display = 'block';
+    renderCards(album);
+};
                     viewSearch.appendChild(res);
                 }
                 album.cards.forEach(card => {
@@ -1368,6 +1396,7 @@ document.getElementById("save-profile-btn").addEventListener("click", async () =
 </body>
 
 </html>
+
 
 
 

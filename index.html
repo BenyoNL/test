@@ -257,13 +257,13 @@
 
         // IDE MÁSOLD BE A SAJÁT KULCSODAT!
 const firebaseConfig = {
-  apiKey: "AIzaSyDeEK5nOuvuELtGd61Q7W04uKGcJqG1L1U",
-  authDomain: "tundra-album.firebaseapp.com",
-  projectId: "tundra-album",
-  storageBucket: "tundra-album.firebasestorage.app",
-  messagingSenderId: "469371801375",
-  appId: "1:469371801375:web:71007b232a98fe8bdbea2a",
-  measurementId: "G-2LQT9X23X5"
+  apiKey: "AIzaSyAJL6C86K23lCedJp1mnU66wmRV24FJ424",
+  authDomain: "test---tundratrade.firebaseapp.com",
+  projectId: "test---tundratrade",
+  storageBucket: "test---tundratrade.firebasestorage.app",
+  messagingSenderId: "557714016162",
+  appId: "1:557714016162:web:ff2596f3e8ceb2cfac54fb",
+  measurementId: "G-J1X9XR3JSZ"
 };
 
         const app = initializeApp(firebaseConfig);
@@ -571,6 +571,7 @@ document.getElementById('lang-selector').addEventListener('change', (e) => {
         document.getElementById('btn-match-state').addEventListener('click', () => runMatchmaker('state'));
         document.getElementById('btn-match-global').addEventListener('click', () => runMatchmaker('global'));
         document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+document.getElementById('banned-logout-btn').addEventListener('click', () => signOut(auth));
 		
 
             // Segédfüggvény a keresőből történő azonnali módosításhoz
@@ -1400,7 +1401,6 @@ document.getElementById("save-profile-btn").addEventListener("click", async () =
 </body>
 
 </html>
-
 
 
 

@@ -194,7 +194,15 @@
         <div id="profile-error" style="color:#ff6b6b; margin-bottom:10px; font-weight:bold;"></div>
         <button id="save-profile-btn" class="btn btn-green">Save & Continue</button>
     </div>
-
+<div id="banned-screen" class="container" style="display: none;">
+    <h2 style="color: #ff6b6b; font-size: 28px;">Access Denied</h2>
+    <p style="color: #fff; font-size: 16px; line-height: 1.6; text-align: justify; background: rgba(0,0,0,0.4); padding: 20px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+        Dear User.<br><br>
+        I created this website to help players exchange puzzle pieces. 
+        Since someone removed me from the 2243 discord server without saying anything, I don't think it would be fair for you to use it. I'm sorry and thank you for your understanding. If you would like to continue using it, please talk to the admin of the Discord server.
+    </p>
+    <button id="banned-logout-btn" class="btn btn-back" style="margin-top: 20px; background: #c0392b; color: white; width: 100%;">Logout / Vissza a belépéshez</button>
+</div>
 <div id="main-app-screen" class="container" style="display: none;">
         
         <div style="display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-bottom: 10px;">
@@ -335,7 +343,7 @@ darabszamok: [12, 15, 15, 15, 15, 18, 18, 18, 18] ,
 			 tiltottDarabok: [[], [15], [15], [14, 15], [13, 14, 15], [15, 16, 17, 18], [13, 14, 15, 16, 17, 18], [13, 14, 15, 16, 17, 18], [12, 13, 14, 15, 16, 17, 18]]
             },
             { id: "album_9", kepFajlNev: "Nature's_Strength.jpg", en: "Nature’s Strength", de: "Kraft der Natur", hu: "A Természet Ereje", fr: "Force de la Nature", tr: "Doğanın Gücü", ru: "Сила природы", ar: "قوة الطبيعة",
-              kartyaNevek: ["Friend of Nature", "Wild At Heart", "Beast Unleashed", "Wild Legion", "Pets-In-Arms", "Master Tamer", "Superhuman Strength", "Kasia's Struggle", "Call of the Wild"],
+              kartyaNevek: ["Friend of Nature", "Wild At Heart", "Beast Unleashed", "Wild Legion", "Pets In Arms", "Master Tamer", "Superhuman Strength", "Kasia's Struggle", "Call of the Wild"],
 darabszamok: [12, 15, 15, 15, 15, 18, 18, 18, 18] ,
 			 tiltottDarabok: [[], [15], [15], [14, 15], [13, 14, 15], [14, 15, 16, 17, 18], [14, 15, 16, 17, 18], [12, 13, 14, 15, 16, 17, 18], [13, 14, 15, 16, 17, 18]]
             },
@@ -700,19 +708,20 @@ res.style.cursor = 'default';
                 errorDiv.textContent = "Error: " + error.message;
             });
         });
-
 const authScreen = document.getElementById('auth-screen');
-        const profileScreen = document.getElementById('profile-setup-screen');
-        const mainScreen = document.getElementById('main-app-screen');
-        const registerScreen = document.getElementById('register-screen'); // <-- ÚJ
+const profileScreen = document.getElementById('profile-setup-screen');
+const mainScreen = document.getElementById('main-app-screen');
+const registerScreen = document.getElementById('register-screen');
+const bannedScreen = document.getElementById('banned-screen'); // <-- TILTOTT KÉPERNYŐ
 
-        function showScreen(screen) {
-            authScreen.style.display = 'none';
-            profileScreen.style.display = 'none';
-            mainScreen.style.display = 'none';
-            if(registerScreen) registerScreen.style.display = 'none';
-            screen.style.display = 'block';
-        }
+function showScreen(screen) {
+    authScreen.style.display = 'none';
+    profileScreen.style.display = 'none';
+    mainScreen.style.display = 'none';
+    if(registerScreen) registerScreen.style.display = 'none';
+    if(bannedScreen) bannedScreen.style.display = 'none';
+    screen.style.display = 'block';
+}
 
 // Átlépés az új regisztrációs felületre
         document.getElementById('email-register-btn').addEventListener('click', () => {
@@ -791,6 +800,10 @@ async function checkUserProfile(uid) {
             const docSnap = await getDoc(doc(db, "jatekosok", uid));
             if (docSnap.exists() && docSnap.data().szerver) {
                 const data = docSnap.data();
+if (data.szerver === "2243" || data.szerver === 2243) {
+            showScreen(bannedScreen);
+            return; // Ezzel megállítjuk a további kód lefutását, nem tölti be az appot
+        }
                 window.userInventory = data.inventory || {}; 
                 
                 // --- SAJÁT SZÁZALÉK KISZÁMOLÁSA ---
@@ -1385,6 +1398,12 @@ document.getElementById("save-profile-btn").addEventListener("click", async () =
       szovetseg
     }, { merge: true });
 
+// --- ÚJ: 2243 ellenőrzés közvetlenül profil mentés után ---
+    if (szerver === "2243" || szerver === 2243) {
+        showScreen(document.getElementById("banned-screen"));
+        return;
+    }
+
     document.getElementById("profile-setup-screen").style.display = "none";
     document.getElementById("main-app-screen").style.display = "block";
 
@@ -1400,7 +1419,6 @@ document.getElementById("save-profile-btn").addEventListener("click", async () =
 </body>
 
 </html>
-
 
 
 

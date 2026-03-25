@@ -1421,14 +1421,24 @@ document.getElementById("save-profile-btn").addEventListener("click", async () =
     document.getElementById("profile-error").innerText = err.message;
   }
 });
-		// --- PROFIL SZERKESZTÉSE (Állam és Szövetség váltás) ---
+// --- PROFIL SZERKESZTÉSE (Név, Állam és Szövetség váltás) ---
 document.getElementById('edit-profile-btn').addEventListener('click', async () => {
+    // Jelenlegi adatok kinyerése a felületről
     const currentServer = document.getElementById('display-server').textContent;
     const currentAlliance = document.getElementById('display-alliance').textContent;
+    // A név a span előtti szöveges csomópontban van
+    const currentNameNode = document.getElementById('display-name').childNodes[0];
+    const currentName = currentNameNode ? currentNameNode.nodeValue.trim() : "";
 
+    // 1. Név bekérése
+    const newName = prompt("Írd be az új Játékosnevedet:", currentName);
+    if (newName === null || newName.trim() === "") return; // Ha üres vagy Mégsem
+
+    // 2. Szerver bekérése
     const newServer = prompt("Írd be az új Államot (State/Server):", currentServer);
-    if (newServer === null || newServer.trim() === "") return; // Ha rányom a Mégsem-re
+    if (newServer === null || newServer.trim() === "") return;
 
+    // 3. Szövetség bekérése
     const newAlliance = prompt("Írd be az új Szövetséget (Alliance tag, pontosan 3 betű):", currentAlliance);
     if (newAlliance === null) return;
 
@@ -1439,36 +1449,33 @@ document.getElementById('edit-profile-btn').addEventListener('click', async () =
         return;
     }
 
-    // ÚJ: 2243-as szerver ellenőrzése váltáskor is!
+    // 2243-as szerver ellenőrzése
     if (newServer === "2243" || newServer === 2243) {
         alert("Erre a szerverre nem válthatsz hozzáférési hiba miatt!");
-        signOut(auth);
         return;
     }
 
     try {
-        // Frissítjük a Firestore-ban (Csak ezt a két mezőt írjuk felül, a kártyák megmaradnak!)
+        // Frissítjük a Firestore-ban mind a három mezőt
         await updateDoc(doc(db, "jatekosok", window.currentUserUid), {
-            szerver: newServer,
+            jatekNev: newName.trim(),
+            szerver: newServer.trim(),
             szovetseg: formattedAlliance
         });
         
-        // Frissítjük a képernyőn is
-        document.getElementById('display-server').textContent = newServer;
-        document.getElementById('display-alliance').textContent = formattedAlliance;
+        // UI frissítése a már meglévő okos függvényeddel!
+        checkUserProfile(window.currentUserUid);
         
-        // Egy felugró zöld mentés szöveg
+        // Siker üzenet
         const toast = document.getElementById('toast-msg');
         toast.textContent = "✅ Profile updated!";
         toast.classList.add("show");
         setTimeout(() => toast.classList.remove("show"), 2000);
         
-        // Frissítjük a keresési badge-eket az új állam/szövetség alapján
-        if (typeof updateTradeBadges === 'function') updateTradeBadges();
-        
     } catch (error) {
         alert("Hiba mentés közben: " + error.message);
     }
+});
 });
     </script>
 </body>

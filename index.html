@@ -1391,56 +1391,94 @@ function updateQty(pieceId, change) {
             modal.classList.remove('show');
         });
 
-		// --- PROFIL MENTÉSE ÉS TOVÁBBLÉPÉS JAVÍTÁS ---
-		
-document.getElementById("save-profile-btn").addEventListener("click", async () => {
-  const jatekNev = document.getElementById("player-name").value.trim();
-  const szerver = document.getElementById("server-number").value.trim();
-  const szovetseg = document.getElementById("alliance-name").value.trim().toUpperCase();
+// =========================================================================
+// --- ÚJ, ELEGÁNS FELUGRÓ ABLAK (MODAL) RENDSZER ---
+// =========================================================================
 
-  if (!jatekNev || !szerver || szovetseg.length !== 3) {
-    document.getElementById("profile-error").innerText =
-      "Please fill all fields correctly (Alliance = 3 chars)";
-    return;
-  }
+// Ez a függvény legenerálja a szép, egyedi adatbekérő ablakot
+function showCustomModal(title, fields, langData) {
+    return new Promise((resolve) => {
+        const modal = document.createElement('div');
+        modal.className = 'video-modal show'; 
+        modal.style.display = 'flex'; 
+        
+        let inputsHtml = '';
+        fields.forEach(f => {
+            inputsHtml += `<label style="color:#ccc; font-size:13px; margin-bottom:5px; display:block;">${f.label}</label>
+                           <input type="${f.type || 'text'}" id="modal-input-${f.id}" value="${f.value}" style="width:100%; margin-top:0; margin-bottom:15px; background: rgba(0,0,0,0.5); color: white; border: 1px solid #e09f3e;">`;
+        });
 
-  try {
-    await setDoc(doc(db, "jatekosok", window.currentUserUid), {
-      jatekNev,
-      szerver,
-      szovetseg
-    }, { merge: true });
-// --- ÚJ: 2243 ellenőrzés közvetlenül profil mentés után ---
-    if (szerver === "2243" || szerver === 2243) {
-        showScreen(document.getElementById("banned-screen"));
-        return;
-    }
-    document.getElementById("profile-setup-screen").style.display = "none";
-    document.getElementById("main-app-screen").style.display = "block";
+        const cancelTxt = window.currLang === 'hu' ? 'Mégsem' : (window.currLang === 'de' ? 'Abbrechen' : (window.currLang === 'fr' ? 'Annuler' : 'Cancel'));
 
-    document.getElementById("display-name").innerText = jatekNev;
-    document.getElementById("display-server").innerText = szerver;
-    document.getElementById("display-alliance").innerText = szovetseg;
+        modal.innerHTML = `
+            <div class="video-modal-content" style="background: rgba(25, 35, 50, 0.95); padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; text-align: left; box-shadow: 0 10px 30px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1);">
+                <h3 style="color: #e09f3e; margin-top: 0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">${title}</h3>
+                ${inputsHtml}
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button id="modal-cancel" class="btn btn-back" style="flex: 1; margin: 0; text-align: center;">${cancelTxt}</button>
+                    <button id="modal-save" class="btn btn-green" style="flex: 1; margin: 0;">✔ OK</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Fókusz az első mezőre
+        if(fields.length > 0) document.getElementById(`modal-input-${fields[0].id}`).focus();
 
-  } catch (err) {
-    document.getElementById("profile-error").innerText = err.message;
-  }
-});// --- KATTINTÁS A NÉVRE: NÉVVÁLTOZTATÁS ---
+        // Ha rányom a Mégsem-re
+        document.getElementById('modal-cancel').addEventListener('click', () => {
+            modal.remove();
+            resolve(null);
+        });
+        
+        // Ha rányom a Mentésre
+        document.getElementById('modal-save').addEventListener('click', () => {
+            const results = {};
+            fields.forEach(f => { results[f.id] = document.getElementById(`modal-input-${f.id}`).value.trim(); });
+            modal.remove();
+            resolve(results);
+        });
+    });
+}
+
+// Egyedi Hiba/Figyelmeztető ablak
+function showCustomAlert(message) {
+    return new Promise((resolve) => {
+        const modal = document.createElement('div');
+        modal.className = 'video-modal show';
+        modal.style.display = 'flex';
+        modal.innerHTML = `
+            <div class="video-modal-content" style="background: rgba(25, 35, 50, 0.95); padding: 25px; border-radius: 12px; width: 90%; max-width: 350px; text-align: center; border: 1px solid #ff6b6b; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+                <h3 style="color: #ff6b6b; margin-top: 0; font-size: 30px;">⚠️</h3>
+                <p style="color: white; margin-bottom: 20px; font-size: 16px;">${message}</p>
+                <button id="modal-ok" class="btn btn-blue" style="width: 100%; margin: 0;">OK</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        document.getElementById('modal-ok').addEventListener('click', () => { modal.remove(); resolve(); });
+    });
+}
+
+// =========================================================================
+// --- KATTINTÁS A NÉVRE ÉS FÖLDGÖMBRE (MODAL HASZNÁLATÁVAL) ---
+// =========================================================================
+
+// Névváltoztatás
 document.getElementById('edit-name-btn').addEventListener('click', async () => {
     const langData = i18n[window.currLang] || i18n['en'];
-    
     const currentNameNode = document.getElementById('display-name').childNodes[0];
     const currentName = currentNameNode ? currentNameNode.nodeValue.trim() : "";
     
-    // Itt már a nyelvfüggő prompt jelenik meg!
-    const newName = prompt(langData.promptName, currentName);
-    if (!newName || newName.trim() === "" || newName === currentName) return; 
+    // Itt hívjuk meg a szép ablakot!
+    const result = await showCustomModal("✏️ Edit Profile", [
+        { id: "newName", label: langData.promptName, value: currentName }
+    ], langData);
+
+    if (!result || !result.newName || result.newName === currentName) return; 
 
     try {
-        await updateDoc(doc(db, "jatekosok", window.currentUserUid), {
-            jatekNev: newName.trim()
-        });
-        
+        await updateDoc(doc(db, "jatekosok", window.currentUserUid), { jatekNev: result.newName });
         checkUserProfile(window.currentUserUid);
         
         const toast = document.getElementById('toast-msg');
@@ -1448,71 +1486,56 @@ document.getElementById('edit-name-btn').addEventListener('click', async () => {
         toast.classList.add("show");
         setTimeout(() => toast.classList.remove("show"), 2000);
     } catch (error) {
-        alert(langData.errSave + error.message);
+        await showCustomAlert(langData.errSave + error.message);
     }
 });
 
-// --- KATTINTÁS A FÖLDGÖMBRE: TRANSFER (Állam és Szövetség váltás) ---
+// Transfer (Állam és Szövetség)
 document.getElementById('transfer-server-btn').addEventListener('click', async () => {
     const langData = i18n[window.currLang] || i18n['en'];
-    
     const currentServer = document.getElementById('display-server').textContent;
     const currentAlliance = document.getElementById('display-alliance').textContent;
 
-    const newServer = prompt(langData.promptState, currentServer);
-    if (newServer === null || newServer.trim() === "") return;
+    // Itt két mezőt kérünk be a szép ablakkal!
+    const result = await showCustomModal("🌍 Transfer", [
+        { id: "newState", label: langData.promptState, value: currentServer, type: "number" },
+        { id: "newAlliance", label: langData.promptAlliance, value: currentAlliance }
+    ], langData);
 
-    const newAlliance = prompt(langData.promptAlliance, currentAlliance);
-    if (newAlliance === null) return;
+    if (!result) return; // Rányomott a Mégsem-re
 
-    const formattedAlliance = newAlliance.trim().toUpperCase();
+    const newServer = result.newState;
+    const formattedAlliance = result.newAlliance.toUpperCase();
 
     if (formattedAlliance.length !== 3) {
-        alert(langData.errAlliance);
+        await showCustomAlert(langData.errAlliance);
         return;
     }
 
     if (newServer === "2243" || newServer === 2243) {
-        alert(langData.errBan);
+        await showCustomAlert(langData.errBan);
         return;
     }
 
     try {
         await updateDoc(doc(db, "jatekosok", window.currentUserUid), {
-            szerver: newServer.trim(),
+            szerver: newServer,
             szovetseg: formattedAlliance
         });
         
         checkUserProfile(window.currentUserUid);
         
         const toast = document.getElementById('toast-msg');
-        toast.textContent = "✅ Saved!";
+        toast.textContent = "✅ Transfer Complete!";
         toast.classList.add("show");
         setTimeout(() => toast.classList.remove("show"), 2000);
         
         if (typeof updateTradeBadges === 'function') updateTradeBadges();
     } catch (error) {
-        alert(langData.errSave + error.message);
+        await showCustomAlert(langData.errSave + error.message);
     }
 });
     </script>
 </body>
 
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -221,7 +221,11 @@
 
 <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
            <h2 style="margin: 0; font-size: 1.5em; color: #e09f3e;"><span id="display-name">Játékos</span></h2>
-            <p style="margin: 5px 0 0 0; color: #ccc;"><span class="t-state">State</span>: <span id="display-server" style="color:#fff; font-weight:bold;">0</span> | <span class="t-alliance">Alliance</span>: <span id="display-alliance" style="color:#fff; font-weight:bold;">---</span></p>
+            <p style="margin: 5px 0 0 0; color: #ccc;">
+    <span class="t-state">State</span>: <span id="display-server" style="color:#fff; font-weight:bold;">0</span> | 
+    <span class="t-alliance">Alliance</span>: <span id="display-alliance" style="color:#fff; font-weight:bold;">---</span>
+    <button id="edit-profile-btn" class="btn btn-back" style="padding: 2px 8px; margin-left: 10px; font-size: 12px; background: rgba(224, 159, 62, 0.2); border-color: #e09f3e;">✏️ Edit</button>
+</p>
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: stretch; gap: 10px; margin-bottom: 20px;">
@@ -1416,6 +1420,55 @@ document.getElementById("save-profile-btn").addEventListener("click", async () =
   } catch (err) {
     document.getElementById("profile-error").innerText = err.message;
   }
+});
+		// --- PROFIL SZERKESZTÉSE (Állam és Szövetség váltás) ---
+document.getElementById('edit-profile-btn').addEventListener('click', async () => {
+    const currentServer = document.getElementById('display-server').textContent;
+    const currentAlliance = document.getElementById('display-alliance').textContent;
+
+    const newServer = prompt("Írd be az új Államot (State/Server):", currentServer);
+    if (newServer === null || newServer.trim() === "") return; // Ha rányom a Mégsem-re
+
+    const newAlliance = prompt("Írd be az új Szövetséget (Alliance tag, pontosan 3 betű):", currentAlliance);
+    if (newAlliance === null) return;
+
+    const formattedAlliance = newAlliance.trim().toUpperCase();
+
+    if (formattedAlliance.length !== 3) {
+        alert("A szövetség nevének pontosan 3 karakternek kell lennie!");
+        return;
+    }
+
+    // ÚJ: 2243-as szerver ellenőrzése váltáskor is!
+    if (newServer === "2243" || newServer === 2243) {
+        alert("Erre a szerverre nem válthatsz hozzáférési hiba miatt!");
+        signOut(auth);
+        return;
+    }
+
+    try {
+        // Frissítjük a Firestore-ban (Csak ezt a két mezőt írjuk felül, a kártyák megmaradnak!)
+        await updateDoc(doc(db, "jatekosok", window.currentUserUid), {
+            szerver: newServer,
+            szovetseg: formattedAlliance
+        });
+        
+        // Frissítjük a képernyőn is
+        document.getElementById('display-server').textContent = newServer;
+        document.getElementById('display-alliance').textContent = formattedAlliance;
+        
+        // Egy felugró zöld mentés szöveg
+        const toast = document.getElementById('toast-msg');
+        toast.textContent = "✅ Profile updated!";
+        toast.classList.add("show");
+        setTimeout(() => toast.classList.remove("show"), 2000);
+        
+        // Frissítjük a keresési badge-eket az új állam/szövetség alapján
+        if (typeof updateTradeBadges === 'function') updateTradeBadges();
+        
+    } catch (error) {
+        alert("Hiba mentés közben: " + error.message);
+    }
 });
     </script>
 </body>

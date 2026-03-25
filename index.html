@@ -219,13 +219,18 @@
             <button id="logout-btn" class="btn btn-back t-btn-logout" style="margin: 0; padding: 5px 15px; font-size: 0.9em; background: #c0392b;">Logout</button>
         </div>
 
-<div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-           <h2 style="margin: 0; font-size: 1.5em; color: #e09f3e;"><span id="display-name">Játékos</span></h2>
-            <p style="margin: 5px 0 0 0; color: #ccc;">
-    <span class="t-state">State</span>: <span id="display-server" style="color:#fff; font-weight:bold;">0</span> | 
-    <span class="t-alliance">Alliance</span>: <span id="display-alliance" style="color:#fff; font-weight:bold;">---</span>
-    <button id="edit-profile-btn" class="btn btn-back" style="padding: 2px 8px; margin-left: 10px; font-size: 12px; background: rgba(224, 159, 62, 0.2); border-color: #e09f3e;">✏️ Edit</button>
-</p>
+<div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h2 id="edit-name-btn" style="margin: 0; font-size: 1.5em; color: #e09f3e; cursor: pointer;" title="Kattints ide a név megváltoztatásához"><span id="display-name">Játékos</span> <span style="font-size: 14px; opacity: 0.7;">✏️</span></h2>
+                <p style="margin: 5px 0 0 0; color: #ccc;">
+                    <span class="t-state">State</span>: <span id="display-server" style="color:#fff; font-weight:bold;">0</span> | 
+                    <span class="t-alliance">Alliance</span>: <span id="display-alliance" style="color:#fff; font-weight:bold;">---</span>
+                </p>
+            </div>
+            <div id="transfer-server-btn" style="display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; padding: 5px 10px; border-radius: 8px; transition: background 0.2s; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                <span style="font-size: 24px;">🌍</span>
+                <span style="font-size: 10px; color: #ccc; font-weight: bold; margin-top: 4px; text-transform: uppercase;">Transfer</span>
+            </div>
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: stretch; gap: 10px; margin-bottom: 20px;">
@@ -1400,7 +1405,7 @@ document.getElementById("save-profile-btn").addEventListener("click", async () =
   }
 
   try {
-    await setDoc(doc(db, "jatekosok", currentUserUid), {
+    await setDoc(doc(db, "jatekosok", window.currentUserUid), {
       jatekNev,
       szerver,
       szovetseg
@@ -1421,24 +1426,39 @@ document.getElementById("save-profile-btn").addEventListener("click", async () =
     document.getElementById("profile-error").innerText = err.message;
   }
 });
-// --- PROFIL SZERKESZTÉSE (Név, Állam és Szövetség váltás) ---
-document.getElementById('edit-profile-btn').addEventListener('click', async () => {
-    // Jelenlegi adatok kinyerése a felületről
-    const currentServer = document.getElementById('display-server').textContent;
-    const currentAlliance = document.getElementById('display-alliance').textContent;
-    // A név a span előtti szöveges csomópontban van
+// --- KATTINTÁS A NÉVRE: NÉVVÁLTOZTATÁS ---
+document.getElementById('edit-name-btn').addEventListener('click', async () => {
+    // Kinyerjük az aktuális nevet a százalékjel nélkül
     const currentNameNode = document.getElementById('display-name').childNodes[0];
     const currentName = currentNameNode ? currentNameNode.nodeValue.trim() : "";
+    
+    const newName = prompt("Add meg az új játékosneved:", currentName);
+    if (!newName || newName.trim() === "" || newName === currentName) return; 
 
-    // 1. Név bekérése
-    const newName = prompt("Írd be az új Játékosnevedet:", currentName);
-    if (newName === null || newName.trim() === "") return; // Ha üres vagy Mégsem
+    try {
+        await updateDoc(doc(db, "jatekosok", window.currentUserUid), {
+            jatekNev: newName.trim()
+        });
+        
+        checkUserProfile(window.currentUserUid);
+        
+        const toast = document.getElementById('toast-msg');
+        toast.textContent = "✅ Name updated!";
+        toast.classList.add("show");
+        setTimeout(() => toast.classList.remove("show"), 2000);
+    } catch (error) {
+        alert("Hiba a név módosításakor: " + error.message);
+    }
+});
 
-    // 2. Szerver bekérése
+// --- KATTINTÁS A FÖLDGÖMBRE: TRANSFER (Állam és Szövetség váltás) ---
+document.getElementById('transfer-server-btn').addEventListener('click', async () => {
+    const currentServer = document.getElementById('display-server').textContent;
+    const currentAlliance = document.getElementById('display-alliance').textContent;
+
     const newServer = prompt("Írd be az új Államot (State/Server):", currentServer);
     if (newServer === null || newServer.trim() === "") return;
 
-    // 3. Szövetség bekérése
     const newAlliance = prompt("Írd be az új Szövetséget (Alliance tag, pontosan 3 betű):", currentAlliance);
     if (newAlliance === null) return;
 
@@ -1449,33 +1469,28 @@ document.getElementById('edit-profile-btn').addEventListener('click', async () =
         return;
     }
 
-    // 2243-as szerver ellenőrzése
     if (newServer === "2243" || newServer === 2243) {
-        alert("Erre a szerverre nem válthatsz hozzáférési hiba miatt!");
+        alert("You can't switch to this server because of KeeKee!!");
         return;
     }
 
     try {
-        // Frissítjük a Firestore-ban mind a három mezőt
         await updateDoc(doc(db, "jatekosok", window.currentUserUid), {
-            jatekNev: newName.trim(),
             szerver: newServer.trim(),
             szovetseg: formattedAlliance
         });
         
-        // UI frissítése a már meglévő okos függvényeddel!
         checkUserProfile(window.currentUserUid);
         
-        // Siker üzenet
         const toast = document.getElementById('toast-msg');
-        toast.textContent = "✅ Profile updated!";
+        toast.textContent = "✅ Transfer complete!";
         toast.classList.add("show");
         setTimeout(() => toast.classList.remove("show"), 2000);
         
+        if (typeof updateTradeBadges === 'function') updateTradeBadges();
     } catch (error) {
-        alert("Hiba mentés közben: " + error.message);
+        alert("Hiba a transfer mentésekor: " + error.message);
     }
-});
 });
     </script>
 </body>

@@ -1491,6 +1491,7 @@ document.getElementById('edit-name-btn').addEventListener('click', async () => {
 });
 
 // Transfer (Állam és Szövetség)
+// --- KATTINTÁS A FÖLDGÖMBRE: TRANSFER (Állam és Szövetség váltás) ---
 document.getElementById('transfer-server-btn').addEventListener('click', async () => {
     const langData = i18n[window.currLang] || i18n['en'];
     const currentServer = document.getElementById('display-server').textContent;
@@ -1504,8 +1505,15 @@ document.getElementById('transfer-server-btn').addEventListener('click', async (
 
     if (!result) return; // Rányomott a Mégsem-re
 
-    const newServer = result.newState;
-    const formattedAlliance = result.newAlliance.toUpperCase();
+    const newServer = result.newState.trim();
+    const formattedAlliance = result.newAlliance.trim().toUpperCase();
+
+    // --- ÚJ VALIDÁCIÓ: Állam hossza pontosan 3 vagy 4 számjegy ---
+    if (newServer.length < 3 || newServer.length > 4) {
+        const errStateMsg = window.currLang === 'hu' ? "Az Állam (State) számának pontosan 3 vagy 4 számjegyből kell állnia!" : "State must be exactly 3 or 4 digits!";
+        await showCustomAlert(errStateMsg);
+        return;
+    }
 
     if (formattedAlliance.length !== 3) {
         await showCustomAlert(langData.errAlliance);

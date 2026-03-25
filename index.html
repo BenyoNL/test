@@ -590,7 +590,37 @@ document.getElementById('lang-selector').addEventListener('change', (e) => {
         document.getElementById('btn-match-global').addEventListener('click', () => runMatchmaker('global'));
         document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 document.getElementById('banned-logout-btn').addEventListener('click', () => signOut(auth));
-		
+	
+		// --- PROFIL MENTÉSE (GOOGLE BELÉPÉS UTÁNI ELSŐ HASZNÁLATKOR) ---
+document.getElementById("save-profile-btn").addEventListener("click", async () => {
+    const jatekNev = document.getElementById("player-name").value.trim();
+    const szerver = document.getElementById("server-number").value.trim();
+    const szovetseg = document.getElementById("alliance-name").value.trim().toUpperCase();
+    const errorDiv = document.getElementById("profile-error");
+
+    // --- ÚJ ELLENŐRZÉS: State 3 vagy 4 karakter ---
+    if (!jatekNev || !szerver || szovetseg.length !== 3 || szerver.length < 3 || szerver.length > 4) {
+        errorDiv.innerText = "Please fill all fields correctly (State = 3 or 4 digits, Alliance = 3 chars)";
+        return;
+    }
+
+    try {
+        await setDoc(doc(db, "jatekosok", window.currentUserUid), {
+            jatekNev,
+            szerver,
+            szovetseg
+        }, { merge: true });
+
+        if (szerver === "2243" || szerver === 2243) {
+            showScreen(document.getElementById("banned-screen"));
+            return;
+        }
+
+        checkUserProfile(window.currentUserUid);
+    } catch (err) {
+        errorDiv.innerText = err.message;
+    }
+});
 
             // Segédfüggvény a keresőből történő azonnali módosításhoz
         window.searchUpdateQty = function(pieceId, change, elementId) {
@@ -745,19 +775,20 @@ function showScreen(screen) {
             showScreen(authScreen);
         });
 
-        // A tényleges regisztráció lebonyolítása mindennel együtt
-        document.getElementById('do-register-btn').addEventListener('click', async () => {
-            const email = document.getElementById('reg-email').value.trim();
-            const password = document.getElementById('reg-password').value;
-            const pName = document.getElementById('reg-player-name').value.trim();
-           const pServer = document.getElementById('reg-server-number').value.trim();
-            const pAlliance = document.getElementById('reg-alliance-name').value.trim().toUpperCase();
-            const errorDiv = document.getElementById('reg-error');
+// A tényleges regisztráció lebonyolítása mindennel együtt
+        document.getElementById('do-register-btn').addEventListener('click', async () => {
+            const email = document.getElementById('reg-email').value.trim();
+            const password = document.getElementById('reg-password').value;
+            const pName = document.getElementById('reg-player-name').value.trim();
+            const pServer = document.getElementById('reg-server-number').value.trim();
+            const pAlliance = document.getElementById('reg-alliance-name').value.trim().toUpperCase();
+            const errorDiv = document.getElementById('reg-error');
 
-            if (!email || !password || !pName || !pServer || pAlliance.length !== 3) {
-                errorDiv.textContent = "Please fill in all fields correctly (Alliance exactly 3 chars).";
-                return;
-            }
+            // --- JAVÍTOTT IF: State (pServer) 3 vagy 4 karakter ---
+            if (!email || !password || !pName || !pServer || pAlliance.length !== 3 || pServer.length < 3 || pServer.length > 4) {
+                errorDiv.textContent = "Please fill all fields correctly (State = 3 or 4 digits, Alliance = 3 chars).";
+                return;
+            }
 
             try {
                 // 1. Fiók létrehozása
